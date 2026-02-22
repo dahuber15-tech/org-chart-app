@@ -4,20 +4,41 @@
   <meta charset="UTF-8" />
   <title>Org Chart App</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: system-ui, Arial; max-width: 900px; margin: 40px auto; padding: 0 16px; }
+    .box { border: 1px solid #ddd; border-radius: 10px; padding: 12px; }
+    button { padding: 8px 12px; }
+    input { padding: 8px 10px; width: 100%; box-sizing: border-box; }
+  </style>
 </head>
 <body>
   <h1>Org Chart App</h1>
+  <div id="app" class="box">Loading…</div>
 
-  <div id="app">
-    Loading...
-  </div>
-
-  <!-- Supabase JS (browser version) -->
+  <!-- Supabase JS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script>
-    // TODO: we will put code here step by step
-    document.getElementById("app").innerText = "HTML file loaded.";
+    // ✅ Paste your values here (publishable key is OK to be public)
+    const SUPABASE_URL = "https://gsyjnjcjfrejcevauql.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_VrYJn2ogF288D8mHJsTA-w_dNpKUuPl";
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    async function main() {
+      const app = document.getElementById("app");
+      app.innerText = "Testing Supabase connection…";
+
+      const { data, error } = await supabase.auth.getSession();
+      if (error) {
+        app.innerText = "❌ Supabase error: " + error.message;
+        return;
+      }
+
+      app.innerText = "✅ Connected to Supabase. Logged in: " + (data.session ? "YES" : "NO");
+    }
+
+    main();
   </script>
 </body>
 </html>
