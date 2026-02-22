@@ -18,28 +18,31 @@
   <!-- Supabase JS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <script>
+<script>
+  const app = document.getElementById("app");
+  app.innerText = "✅ Inline JS is running...";
+
+  // If the Supabase CDN script failed to load, we show it clearly
+  if (!window.supabase) {
+    app.innerText =
+      "❌ Supabase JS library did not load. Likely blocked by browser/extension or CDN failed.";
+    throw new Error("Supabase JS library did not load (window.supabase is undefined).");
+  }
+
   const SUPABASE_URL = "https://gsyjnjcjfrejcevauql.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_VrYJn2ogF288D8mHJsTA-w_dNpKUuPl";
 
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  async function main() {
-    const app = document.getElementById("app");
-
-    // NEW: instant marker (no async)
-    app.innerText = "✅ JS loaded. Now testing Supabase...";
-
-    const { data, error } = await supabase.auth.getSession();
+  (async () => {
+    app.innerText = "✅ Supabase library loaded. Testing auth session...";
+    const { data, error } = await supabaseClient.auth.getSession();
     if (error) {
       app.innerText = "❌ Supabase error: " + error.message;
       return;
     }
-
     app.innerText = "✅ Connected. Logged in: " + (data.session ? "YES" : "NO");
-  }
-
-  main();
+  })();
 </script>
 </body>
 </html>
