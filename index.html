@@ -303,6 +303,24 @@
 
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    // --- Simple view state (survives tab reloads) ---
+function saveViewState(state) {
+  sessionStorage.setItem("orgapp_view", JSON.stringify(state));
+}
+
+function loadViewState() {
+  try {
+    return JSON.parse(sessionStorage.getItem("orgapp_view") || "null");
+  } catch {
+    return null;
+  }
+}
+
+// Default state if nothing saved
+function setDashboardState() {
+  saveViewState({ view: "dashboard" });
+}
+
     // ---------------------------
     // LOGIN VIEW
     // ---------------------------
@@ -342,6 +360,7 @@
     // ---------------------------
     // DASHBOARD: ORG LIST
     // ---------------------------
+    setDashboardState();
     function renderLoggedIn(user) {
       root.innerHTML = `
         <div class="container">
@@ -463,7 +482,8 @@
     // ORG VIEW (two big buttons)
     // ---------------------------
    function openOrg(orgId) {
-  root.innerHTML = `
+ saveViewState({ view: "org", orgId, subview: "chart" });
+     root.innerHTML = `
     <div class="container">
       <div class="topbar">
         <div class="brand">
@@ -494,9 +514,13 @@
 
   document.getElementById("backBtn").onclick = async () => {
     const { data } = await supabaseClient.auth.getSession();
-    if (data.session?.user) renderLoggedIn(data.session.user);
-    else renderLoggedOut();
-  };
+    if (data.session?.user) {
+  const state = loadViewState();
+  if (state?.view === "org" && state.orgId) openOrg(state.orgId);
+  else renderLoggedIn(data.session.user);
+} else {
+  renderLoggedOut();
+}
 
   function showChart() {
     document.getElementById("orgBody").innerHTML = `
@@ -627,11 +651,27 @@
     `;
   }
 
-  document.getElementById("btnChart").onclick = showChart;
-  document.getElementById("btnAdd").onclick = showAdd;
-  document.getElementById("btnAdmin").onclick = showAdmin;
+document.getElementById("btnChart").onclick = () => {
+  saveViewState({ view: "org", orgId, subview: "chart" });
+  showChart();
+};
 
-  // Default
+document.getElementById("btnAdd").onclick = () => {
+  saveViewState({ view: "org", orgId, subview: "add" });
+  showAdd();
+};
+
+document.getElementById("btnAdmin").onclick = () => {
+  saveViewState({ view: "org", orgId, subview: "admin" });
+  showAdmin();
+};
+
+const state = loadViewState();
+if (state?.view === "org" && state.orgId === orgId) {
+  if (state.subview === "add") showAdd();
+  else if (state.subview === "admin") showAdmin();
+  else showChart();
+} else {
   showChart();
 }
     // ---------------------------
@@ -643,9 +683,14 @@
       else renderLoggedOut();
 
       supabaseClient.auth.onAuthStateChange((_event, session) => {
-        if (session?.user) renderLoggedIn(session.user);
-        else renderLoggedOut();
-      });
+  if (session?.user) {
+    const state = loadViewState();
+    if (state?.view === "org" && state.orgId) openOrg(state.orgId);
+    else renderLoggedIn(session.user);
+  } else {
+    renderLoggedOut();
+  }
+});
     }
 
     start();
