@@ -454,101 +454,102 @@
     // ---------------------------
     // ORG VIEW (two big buttons)
     // ---------------------------
-    function openOrg(orgId) {
-      root.innerHTML = `
-        <div class="container">
-          <div class="topbar">
-            <div class="brand">
-              <div class="logo" aria-hidden="true"></div>
-              <div>Org Chart App</div>
-            </div>
-            <button class="btn" id="backBtn">← Back</button>
-          </div>
-
-          <div class="panel orgShell" style="margin-top:14px;">
-            <div class="orgHeader">
-              <div>
-                <h2>Org chart</h2>
-                <p>Selected chart ID: <span style="color:var(--accent);">${escapeHtml(orgId)}</span></p>
-              </div>
-            </div>
-
-            <div class="centerActions">
-  <button class="btn big primary" id="btnAdd">Add new contacts</button>
-  <button class="btn big" id="btnChart">View full chart</button>
-  <button class="btn big" id="btnAdmin">Admin: structure</button>
-</div>
-
-            <div id="orgBody" class="subPanel">Choose an option above.</div>
-          </div>
+   function openOrg(orgId) {
+  root.innerHTML = `
+    <div class="container">
+      <div class="topbar">
+        <div class="brand">
+          <div class="logo" aria-hidden="true"></div>
+          <div>Org Chart App</div>
         </div>
-      `;
-
-      document.getElementById("backBtn").onclick = async () => {
-        const { data } = await supabaseClient.auth.getSession();
-        if (data.session?.user) renderLoggedIn(data.session.user);
-        else renderLoggedOut();
-      };
-
-      function showChart() {
-        document.getElementById("orgBody").innerHTML = `
-          <h3 style="margin:0 0 8px;">Full chart</h3>
-          <p style="margin:0; color:var(--muted);">
-            Next step: render the tree here (manager → direct reports).
-          </p>
-        `;
-      }
-
-      function showAdd() {
-        document.getElementById("orgBody").innerHTML = `
-          <h3 style="margin:0 0 8px;">Add new contact</h3>
-          <p style="margin:0; color:var(--muted);">
-            Next step: we’ll add the form (name, position, department, manager) and save into <code>people</code>.
-          </p>
-          
-      function showAdmin() {
-  document.getElementById("orgBody").innerHTML = `
-    <h3 style="margin:0 0 10px;">Admin · Organisation structure</h3>
-    <p style="margin:0 0 14px; color:var(--muted);">
-      Define dropdown options for Hall/Area, MSE/Group, and Office/Location.
-    </p>
-
-    <div style="display:grid; gap:14px; max-width:560px;">
-      <div class="subPanel">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <b>Halls / Areas</b>
-          <button class="btn">+ Add</button>
-        </div>
-        <div style="margin-top:8px; color:var(--muted); font-size:13px;">No halls defined yet.</div>
+        <button class="btn" id="backBtn">← Back</button>
       </div>
 
-      <div class="subPanel">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <b>MSE / Groups</b>
-          <button class="btn">+ Add</button>
+      <div class="panel orgShell" style="margin-top:14px;">
+        <div class="orgHeader">
+          <div>
+            <h2>Org chart</h2>
+            <p>Selected chart ID: <span style="color:var(--accent);">${escapeHtml(orgId)}</span></p>
+          </div>
         </div>
-        <div style="margin-top:8px; color:var(--muted); font-size:13px;">No groups defined yet.</div>
-      </div>
 
-      <div class="subPanel">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <b>Offices / Locations</b>
-          <button class="btn">+ Add</button>
+        <div class="centerActions">
+          <button class="btn big primary" id="btnAdd">Add new contacts</button>
+          <button class="btn big" id="btnChart">View full chart</button>
+          <button class="btn big" id="btnAdmin">Admin: structure</button>
         </div>
-        <div style="margin-top:8px; color:var(--muted); font-size:13px;">No locations defined yet.</div>
+
+        <div id="orgBody" class="subPanel">Choose an option above.</div>
       </div>
     </div>
   `;
+
+  document.getElementById("backBtn").onclick = async () => {
+    const { data } = await supabaseClient.auth.getSession();
+    if (data.session?.user) renderLoggedIn(data.session.user);
+    else renderLoggedOut();
+  };
+
+  function showChart() {
+    document.getElementById("orgBody").innerHTML = `
+      <h3 style="margin:0 0 8px;">Full chart</h3>
+      <p style="margin:0; color:var(--muted);">
+        Next step: render the tree here (manager → direct reports).
+      </p>
+    `;
+  }
+
+  function showAdd() {
+    document.getElementById("orgBody").innerHTML = `
+      <h3 style="margin:0 0 8px;">Add new contact</h3>
+      <p style="margin:0; color:var(--muted);">
+        Next step: we’ll add the form (name, position, department, manager) and save into <code>people</code>.
+      </p>
+    `;
+  }
+
+  function showAdmin() {
+    document.getElementById("orgBody").innerHTML = `
+      <h3 style="margin:0 0 10px;">Admin · Organisation structure</h3>
+      <p style="margin:0 0 14px; color:var(--muted);">
+        Define dropdown options for Hall/Area, MSE/Group, and Office/Location.
+      </p>
+
+      <div style="display:grid; gap:14px; max-width:560px;">
+        <div class="subPanel">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <b>Halls / Areas</b>
+            <button class="btn">+ Add</button>
+          </div>
+          <div style="margin-top:8px; color:var(--muted); font-size:13px;">No halls defined yet.</div>
+        </div>
+
+        <div class="subPanel">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <b>MSE / Groups</b>
+            <button class="btn">+ Add</button>
+          </div>
+          <div style="margin-top:8px; color:var(--muted); font-size:13px;">No groups defined yet.</div>
+        </div>
+
+        <div class="subPanel">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <b>Offices / Locations</b>
+            <button class="btn">+ Add</button>
+          </div>
+          <div style="margin-top:8px; color:var(--muted); font-size:13px;">No locations defined yet.</div>
+        </div>
+      </div>
+    `;
+  }
+
+  document.getElementById("btnChart").onclick = showChart;
+  document.getElementById("btnAdd").onclick = showAdd;
+  document.getElementById("btnAdmin").onclick = showAdmin;
+
+  // Default
+  showChart();
 }
-
-      document.getElementById("btnChart").onclick = showChart;
-      document.getElementById("btnAdd").onclick = showAdd;
-      document.getElementById("btnAdmin").onclick = showAdmin;
-
-      // Default
-      showChart();
-    }
-
     // ---------------------------
     // APP START
     // ---------------------------
