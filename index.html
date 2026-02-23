@@ -360,7 +360,6 @@ function setDashboardState() {
     // ---------------------------
     // DASHBOARD: ORG LIST
     // ---------------------------
-    setDashboardState();
     function renderLoggedIn(user) {
       root.innerHTML = `
         <div class="container">
@@ -481,9 +480,8 @@ function setDashboardState() {
     // ---------------------------
     // ORG VIEW (two big buttons)
     // ---------------------------
-   function openOrg(orgId) {
- saveViewState({ view: "org", orgId, subview: "chart" });
-     root.innerHTML = `
+ function openOrg(orgId) {
+  root.innerHTML = `
     <div class="container">
       <div class="topbar">
         <div class="brand">
@@ -512,15 +510,13 @@ function setDashboardState() {
     </div>
   `;
 
+  // Back button: go to dashboard and remember that
   document.getElementById("backBtn").onclick = async () => {
+    setDashboardState();
     const { data } = await supabaseClient.auth.getSession();
-    if (data.session?.user) {
-  const state = loadViewState();
-  if (state?.view === "org" && state.orgId) openOrg(state.orgId);
-  else renderLoggedIn(data.session.user);
-} else {
-  renderLoggedOut();
-}
+    if (data.session?.user) renderLoggedIn(data.session.user);
+    else renderLoggedOut();
+  };
 
   function showChart() {
     document.getElementById("orgBody").innerHTML = `
@@ -532,89 +528,82 @@ function setDashboardState() {
   }
 
   function showAdd() {
-  document.getElementById("orgBody").innerHTML = `
-    <h3 style="margin:0 0 14px;">Add new contact</h3>
+    document.getElementById("orgBody").innerHTML = `
+      <h3 style="margin:0 0 14px;">Add new contact</h3>
 
-    <div style="display:grid; gap:14px; max-width:520px;">
+      <div style="display:grid; gap:14px; max-width:520px;">
+        <div>
+          <label class="muted">Name</label>
+          <input class="input" id="personName" placeholder="E.g. John Smith" />
+        </div>
 
-      <div>
-        <label class="muted">Name</label>
-        <input class="input" id="personName" placeholder="E.g. John Smith" />
+        <div>
+          <label class="muted">Position</label>
+          <input class="input" id="personPosition" placeholder="E.g. Senior Process Engineer" />
+        </div>
+
+        <div>
+          <label class="muted">Reports to</label>
+          <select class="input" id="personManager" disabled>
+            <option value="">Select manager</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="muted">Hall / Area</label>
+          <select class="input" disabled>
+            <option value="">Select hall</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="muted">MSE / Group</label>
+          <select class="input" disabled>
+            <option value="">Select group</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="muted">Office / Location</label>
+          <select class="input" disabled>
+            <option value="">Select location</option>
+          </select>
+        </div>
+
+        <button class="btn primary" id="savePersonBtn" style="width:200px;">Save contact</button>
+        <div class="msg" id="personMsg"></div>
       </div>
+    `;
 
-      <div>
-        <label class="muted">Position</label>
-        <input class="input" id="personPosition" placeholder="E.g. Senior Process Engineer" />
-      </div>
+    document.getElementById("savePersonBtn").onclick = async () => {
+      const name = document.getElementById("personName").value.trim();
+      const position = document.getElementById("personPosition").value.trim();
+      const msg = document.getElementById("personMsg");
 
-      <div>
-        <label class="muted">Reports to</label>
-        <select class="input" id="personManager" disabled>
-          <option value="">Select manager</option>
-        </select>
-      </div>
+      msg.textContent = "";
+      msg.style.color = "var(--danger)";
 
-      <div>
-        <label class="muted">Hall / Area</label>
-        <select class="input" disabled>
-          <option value="">Select hall</option>
-        </select>
-      </div>
+      if (!name) {
+        msg.textContent = "Name is required.";
+        return;
+      }
 
-      <div>
-        <label class="muted">MSE / Group</label>
-        <select class="input" disabled>
-          <option value="">Select group</option>
-        </select>
-      </div>
+      const { error } = await supabaseClient
+        .from("people")
+        .insert({ organisation_id: orgId, name, position });
 
-      <div>
-        <label class="muted">Office / Location</label>
-        <select class="input" disabled>
-          <option value="">Select location</option>
-        </select>
-      </div>
+      if (error) {
+        msg.textContent = error.message;
+        return;
+      }
 
-      <button class="btn primary" id="savePersonBtn" style="width:200px;">
-        Save contact
-      </button>
+      msg.style.color = "var(--good)";
+      msg.textContent = "Contact saved.";
 
-      <div class="msg" id="personMsg"></div>
-    </div>
-  `;
-
-  document.getElementById("savePersonBtn").onclick = async () => {
-    const name = document.getElementById("personName").value.trim();
-    const position = document.getElementById("personPosition").value.trim();
-    const msg = document.getElementById("personMsg");
-
-    msg.textContent = "";
-
-    if (!name) {
-      msg.textContent = "Name is required.";
-      return;
-    }
-
-    const { error } = await supabaseClient
-      .from("people")
-      .insert({
-        organisation_id: orgId,
-        name,
-        position
-      });
-
-    if (error) {
-      msg.textContent = error.message;
-      return;
-    }
-
-    msg.style.color = "var(--good)";
-    msg.textContent = "Contact saved.";
-
-    document.getElementById("personName").value = "";
-    document.getElementById("personPosition").value = "";
-  };
-}
+      document.getElementById("personName").value = "";
+      document.getElementById("personPosition").value = "";
+    };
+  }
 
   function showAdmin() {
     document.getElementById("orgBody").innerHTML = `
@@ -651,36 +640,57 @@ function setDashboardState() {
     `;
   }
 
-document.getElementById("btnChart").onclick = () => {
-  saveViewState({ view: "org", orgId, subview: "chart" });
-  showChart();
-};
+  // Button handlers save state + show view
+  document.getElementById("btnChart").onclick = () => {
+    saveViewState({ view: "org", orgId, subview: "chart" });
+    showChart();
+  };
 
-document.getElementById("btnAdd").onclick = () => {
-  saveViewState({ view: "org", orgId, subview: "add" });
-  showAdd();
-};
+  document.getElementById("btnAdd").onclick = () => {
+    saveViewState({ view: "org", orgId, subview: "add" });
+    showAdd();
+  };
 
-document.getElementById("btnAdmin").onclick = () => {
-  saveViewState({ view: "org", orgId, subview: "admin" });
-  showAdmin();
-};
+  document.getElementById("btnAdmin").onclick = () => {
+    saveViewState({ view: "org", orgId, subview: "admin" });
+    showAdmin();
+  };
 
-const state = loadViewState();
-if (state?.view === "org" && state.orgId === orgId) {
-  if (state.subview === "add") showAdd();
-  else if (state.subview === "admin") showAdmin();
-  else showChart();
-} else {
-  showChart();
+  // Restore last subview for THIS org
+  const state = loadViewState();
+  if (state?.view === "org" && state.orgId === orgId) {
+    if (state.subview === "add") showAdd();
+    else if (state.subview === "admin") showAdmin();
+    else showChart();
+  } else {
+    saveViewState({ view: "org", orgId, subview: "chart" });
+    showChart();
+  }
 }
     // ---------------------------
     // APP START
     // ---------------------------
-    async function start() {
-      const { data } = await supabaseClient.auth.getSession();
-      if (data.session?.user) renderLoggedIn(data.session.user);
-      else renderLoggedOut();
+   async function start() {
+  const { data } = await supabaseClient.auth.getSession();
+
+  if (data.session?.user) {
+    const state = loadViewState();
+    if (state?.view === "org" && state.orgId) openOrg(state.orgId);
+    else renderLoggedIn(data.session.user);
+  } else {
+    renderLoggedOut();
+  }
+
+  supabaseClient.auth.onAuthStateChange((_event, session) => {
+    if (session?.user) {
+      const state = loadViewState();
+      if (state?.view === "org" && state.orgId) openOrg(state.orgId);
+      else renderLoggedIn(session.user);
+    } else {
+      renderLoggedOut();
+    }
+  });
+}
 
       supabaseClient.auth.onAuthStateChange((_event, session) => {
   if (session?.user) {
