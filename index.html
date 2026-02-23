@@ -117,9 +117,9 @@
       border-color: rgba(255,255,255,0.22);
       box-shadow: 0 0 0 4px var(--focus);
     }
-    select.input {
-  padding-right: 40px; /* moves arrow inward */
-}
+
+    /* moves native select arrow inward */
+    select.input { padding-right: 40px; }
 
     .panel {
       border: 1px solid var(--border);
@@ -167,6 +167,13 @@
       color: var(--danger);
       font-size: 13px;
       min-height: 18px;
+    }
+
+    .muted {
+      font-size: 13px;
+      color: var(--muted);
+      display:block;
+      margin-bottom: 6px;
     }
 
     .sectionTitle {
@@ -232,9 +239,7 @@
       padding: 18px 10px;
     }
 
-    .orgShell {
-      padding: 16px;
-    }
+    .orgShell { padding: 16px; }
 
     .orgHeader {
       display:flex;
@@ -266,11 +271,6 @@
       .card { grid-column: span 12; }
       .createRow { flex-direction: column; }
     }
-    
-    .muted {
-  font-size: 13px;
-  color: var(--muted);
-}
   </style>
 </head>
 
@@ -304,22 +304,16 @@
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     // --- Simple view state (survives tab reloads) ---
-function saveViewState(state) {
-  sessionStorage.setItem("orgapp_view", JSON.stringify(state));
-}
-
-function loadViewState() {
-  try {
-    return JSON.parse(sessionStorage.getItem("orgapp_view") || "null");
-  } catch {
-    return null;
-  }
-}
-
-// Default state if nothing saved
-function setDashboardState() {
-  saveViewState({ view: "dashboard" });
-}
+    function saveViewState(state) {
+      sessionStorage.setItem("orgapp_view", JSON.stringify(state));
+    }
+    function loadViewState() {
+      try { return JSON.parse(sessionStorage.getItem("orgapp_view") || "null"); }
+      catch { return null; }
+    }
+    function setDashboardState() {
+      saveViewState({ view: "dashboard" });
+    }
 
     // ---------------------------
     // LOGIN VIEW
@@ -361,6 +355,9 @@ function setDashboardState() {
     // DASHBOARD: ORG LIST
     // ---------------------------
     function renderLoggedIn(user) {
+      // Only set dashboard state when we actually render dashboard
+      setDashboardState();
+
       root.innerHTML = `
         <div class="container">
           <div class="topbar">
@@ -413,13 +410,12 @@ function setDashboardState() {
       };
 
       async function getPeopleCount(orgId) {
-        // Uses count without returning rows
         const { count, error } = await supabaseClient
           .from("people")
           .select("id", { count: "exact", head: true })
           .eq("organisation_id", orgId);
 
-        if (error) return null;
+        if (error) return 0;
         return count ?? 0;
       }
 
@@ -446,10 +442,9 @@ function setDashboardState() {
           return;
         }
 
-        // Fetch people counts (simple + practical; fine for MVP)
         const counts = await Promise.all(orgs.map(async (o) => {
           const peopleCount = await getPeopleCount(o.id);
-          return { orgId: o.id, peopleCount: peopleCount ?? 0 };
+          return { orgId: o.id, peopleCount };
         }));
         const countMap = new Map(counts.map(x => [x.orgId, x.peopleCount]));
 
@@ -478,229 +473,217 @@ function setDashboardState() {
     }
 
     // ---------------------------
-    // ORG VIEW (two big buttons)
+    // ORG VIEW (3 big buttons)
     // ---------------------------
- function openOrg(orgId) {
-  root.innerHTML = `
-    <div class="container">
-      <div class="topbar">
-        <div class="brand">
-          <div class="logo" aria-hidden="true"></div>
-          <div>Org Chart App</div>
-        </div>
-        <button class="btn" id="backBtn">← Back</button>
-      </div>
+    function openOrg(orgId) {
+      root.innerHTML = `
+        <div class="container">
+          <div class="topbar">
+            <div class="brand">
+              <div class="logo" aria-hidden="true"></div>
+              <div>Org Chart App</div>
+            </div>
+            <button class="btn" id="backBtn">← Back</button>
+          </div>
 
-      <div class="panel orgShell" style="margin-top:14px;">
-        <div class="orgHeader">
-          <div>
-            <h2>Org chart</h2>
-            <p>Selected chart ID: <span style="color:var(--accent);">${escapeHtml(orgId)}</span></p>
+          <div class="panel orgShell" style="margin-top:14px;">
+            <div class="orgHeader">
+              <div>
+                <h2>Org chart</h2>
+                <p>Selected chart ID: <span style="color:var(--accent);">${escapeHtml(orgId)}</span></p>
+              </div>
+            </div>
+
+            <div class="centerActions">
+              <button class="btn big primary" id="btnAdd">Add new contacts</button>
+              <button class="btn big" id="btnChart">View full chart</button>
+              <button class="btn big" id="btnAdmin">Admin: structure</button>
+            </div>
+
+            <div id="orgBody" class="subPanel">Choose an option above.</div>
           </div>
         </div>
+      `;
 
-        <div class="centerActions">
-          <button class="btn big primary" id="btnAdd">Add new contacts</button>
-          <button class="btn big" id="btnChart">View full chart</button>
-          <button class="btn big" id="btnAdmin">Admin: structure</button>
-        </div>
+      // Back -> dashboard + save state
+      document.getElementById("backBtn").onclick = async () => {
+        setDashboardState();
+        const { data } = await supabaseClient.auth.getSession();
+        if (data.session?.user) renderLoggedIn(data.session.user);
+        else renderLoggedOut();
+      };
 
-        <div id="orgBody" class="subPanel">Choose an option above.</div>
-      </div>
-    </div>
-  `;
-
-  // Back button: go to dashboard and remember that
-  document.getElementById("backBtn").onclick = async () => {
-    setDashboardState();
-    const { data } = await supabaseClient.auth.getSession();
-    if (data.session?.user) renderLoggedIn(data.session.user);
-    else renderLoggedOut();
-  };
-
-  function showChart() {
-    document.getElementById("orgBody").innerHTML = `
-      <h3 style="margin:0 0 8px;">Full chart</h3>
-      <p style="margin:0; color:var(--muted);">
-        Next step: render the tree here (manager → direct reports).
-      </p>
-    `;
-  }
-
-  function showAdd() {
-    document.getElementById("orgBody").innerHTML = `
-      <h3 style="margin:0 0 14px;">Add new contact</h3>
-
-      <div style="display:grid; gap:14px; max-width:520px;">
-        <div>
-          <label class="muted">Name</label>
-          <input class="input" id="personName" placeholder="E.g. John Smith" />
-        </div>
-
-        <div>
-          <label class="muted">Position</label>
-          <input class="input" id="personPosition" placeholder="E.g. Senior Process Engineer" />
-        </div>
-
-        <div>
-          <label class="muted">Reports to</label>
-          <select class="input" id="personManager" disabled>
-            <option value="">Select manager</option>
-          </select>
-        </div>
-
-        <div>
-          <label class="muted">Hall / Area</label>
-          <select class="input" disabled>
-            <option value="">Select hall</option>
-          </select>
-        </div>
-
-        <div>
-          <label class="muted">MSE / Group</label>
-          <select class="input" disabled>
-            <option value="">Select group</option>
-          </select>
-        </div>
-
-        <div>
-          <label class="muted">Office / Location</label>
-          <select class="input" disabled>
-            <option value="">Select location</option>
-          </select>
-        </div>
-
-        <button class="btn primary" id="savePersonBtn" style="width:200px;">Save contact</button>
-        <div class="msg" id="personMsg"></div>
-      </div>
-    `;
-
-    document.getElementById("savePersonBtn").onclick = async () => {
-      const name = document.getElementById("personName").value.trim();
-      const position = document.getElementById("personPosition").value.trim();
-      const msg = document.getElementById("personMsg");
-
-      msg.textContent = "";
-      msg.style.color = "var(--danger)";
-
-      if (!name) {
-        msg.textContent = "Name is required.";
-        return;
+      function showChart() {
+        document.getElementById("orgBody").innerHTML = `
+          <h3 style="margin:0 0 8px;">Full chart</h3>
+          <p style="margin:0; color:var(--muted);">
+            Next step: render the tree here (manager → direct reports).
+          </p>
+        `;
       }
 
-      const { error } = await supabaseClient
-        .from("people")
-        .insert({ organisation_id: orgId, name, position });
+      function showAdd() {
+        document.getElementById("orgBody").innerHTML = `
+          <h3 style="margin:0 0 14px;">Add new contact</h3>
 
-      if (error) {
-        msg.textContent = error.message;
-        return;
+          <div style="display:grid; gap:14px; max-width:520px;">
+            <div>
+              <label class="muted">Name</label>
+              <input class="input" id="personName" placeholder="E.g. John Smith" />
+            </div>
+
+            <div>
+              <label class="muted">Position</label>
+              <input class="input" id="personPosition" placeholder="E.g. Senior Process Engineer" />
+            </div>
+
+            <div>
+              <label class="muted">Reports to</label>
+              <select class="input" id="personManager" disabled>
+                <option value="">Select manager ▼</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="muted">Hall / Area</label>
+              <select class="input" disabled>
+                <option value="">Select hall ▼</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="muted">MSE / Group</label>
+              <select class="input" disabled>
+                <option value="">Select group ▼</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="muted">Office / Location</label>
+              <select class="input" disabled>
+                <option value="">Select location ▼</option>
+              </select>
+            </div>
+
+            <button class="btn primary" id="savePersonBtn" style="width:200px;">Save contact</button>
+            <div class="msg" id="personMsg"></div>
+          </div>
+        `;
+
+        document.getElementById("savePersonBtn").onclick = async () => {
+          const name = document.getElementById("personName").value.trim();
+          const position = document.getElementById("personPosition").value.trim();
+          const msg = document.getElementById("personMsg");
+
+          msg.textContent = "";
+          msg.style.color = "var(--danger)";
+
+          if (!name) {
+            msg.textContent = "Name is required.";
+            return;
+          }
+
+          const { error } = await supabaseClient
+            .from("people")
+            .insert({ organisation_id: orgId, name, position });
+
+          if (error) {
+            msg.textContent = error.message;
+            return;
+          }
+
+          msg.style.color = "var(--good)";
+          msg.textContent = "Contact saved.";
+
+          document.getElementById("personName").value = "";
+          document.getElementById("personPosition").value = "";
+        };
       }
 
-      msg.style.color = "var(--good)";
-      msg.textContent = "Contact saved.";
+      function showAdmin() {
+        document.getElementById("orgBody").innerHTML = `
+          <h3 style="margin:0 0 10px;">Admin · Organisation structure</h3>
+          <p style="margin:0 0 14px; color:var(--muted);">
+            Define dropdown options for Hall/Area, MSE/Group, and Office/Location.
+          </p>
 
-      document.getElementById("personName").value = "";
-      document.getElementById("personPosition").value = "";
-    };
-  }
+          <div style="display:grid; gap:14px; max-width:560px;">
+            <div class="subPanel">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <b>Halls / Areas</b>
+                <button class="btn">+ Add</button>
+              </div>
+              <div style="margin-top:8px; color:var(--muted); font-size:13px;">No halls defined yet.</div>
+            </div>
 
-  function showAdmin() {
-    document.getElementById("orgBody").innerHTML = `
-      <h3 style="margin:0 0 10px;">Admin · Organisation structure</h3>
-      <p style="margin:0 0 14px; color:var(--muted);">
-        Define dropdown options for Hall/Area, MSE/Group, and Office/Location.
-      </p>
+            <div class="subPanel">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <b>MSE / Groups</b>
+                <button class="btn">+ Add</button>
+              </div>
+              <div style="margin-top:8px; color:var(--muted); font-size:13px;">No groups defined yet.</div>
+            </div>
 
-      <div style="display:grid; gap:14px; max-width:560px;">
-        <div class="subPanel">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <b>Halls / Areas</b>
-            <button class="btn">+ Add</button>
+            <div class="subPanel">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <b>Offices / Locations</b>
+                <button class="btn">+ Add</button>
+              </div>
+              <div style="margin-top:8px; color:var(--muted); font-size:13px;">No locations defined yet.</div>
+            </div>
           </div>
-          <div style="margin-top:8px; color:var(--muted); font-size:13px;">No halls defined yet.</div>
-        </div>
+        `;
+      }
 
-        <div class="subPanel">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <b>MSE / Groups</b>
-            <button class="btn">+ Add</button>
-          </div>
-          <div style="margin-top:8px; color:var(--muted); font-size:13px;">No groups defined yet.</div>
-        </div>
+      // Button handlers: save state + show view
+      document.getElementById("btnChart").onclick = () => {
+        saveViewState({ view: "org", orgId, subview: "chart" });
+        showChart();
+      };
+      document.getElementById("btnAdd").onclick = () => {
+        saveViewState({ view: "org", orgId, subview: "add" });
+        showAdd();
+      };
+      document.getElementById("btnAdmin").onclick = () => {
+        saveViewState({ view: "org", orgId, subview: "admin" });
+        showAdmin();
+      };
 
-        <div class="subPanel">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <b>Offices / Locations</b>
-            <button class="btn">+ Add</button>
-          </div>
-          <div style="margin-top:8px; color:var(--muted); font-size:13px;">No locations defined yet.</div>
-        </div>
-      </div>
-    `;
-  }
+      // Restore last subview for this org
+      const state = loadViewState();
+      if (state?.view === "org" && state.orgId === orgId) {
+        if (state.subview === "add") showAdd();
+        else if (state.subview === "admin") showAdmin();
+        else showChart();
+      } else {
+        saveViewState({ view: "org", orgId, subview: "chart" });
+        showChart();
+      }
+    }
 
-  // Button handlers save state + show view
-  document.getElementById("btnChart").onclick = () => {
-    saveViewState({ view: "org", orgId, subview: "chart" });
-    showChart();
-  };
-
-  document.getElementById("btnAdd").onclick = () => {
-    saveViewState({ view: "org", orgId, subview: "add" });
-    showAdd();
-  };
-
-  document.getElementById("btnAdmin").onclick = () => {
-    saveViewState({ view: "org", orgId, subview: "admin" });
-    showAdmin();
-  };
-
-  // Restore last subview for THIS org
-  const state = loadViewState();
-  if (state?.view === "org" && state.orgId === orgId) {
-    if (state.subview === "add") showAdd();
-    else if (state.subview === "admin") showAdmin();
-    else showChart();
-  } else {
-    saveViewState({ view: "org", orgId, subview: "chart" });
-    showChart();
-  }
-}
     // ---------------------------
     // APP START
     // ---------------------------
-   async function start() {
-  const { data } = await supabaseClient.auth.getSession();
+    async function start() {
+      const { data } = await supabaseClient.auth.getSession();
 
-  if (data.session?.user) {
-    const state = loadViewState();
-    if (state?.view === "org" && state.orgId) openOrg(state.orgId);
-    else renderLoggedIn(data.session.user);
-  } else {
-    renderLoggedOut();
-  }
-
-  supabaseClient.auth.onAuthStateChange((_event, session) => {
-    if (session?.user) {
-      const state = loadViewState();
-      if (state?.view === "org" && state.orgId) openOrg(state.orgId);
-      else renderLoggedIn(session.user);
-    } else {
-      renderLoggedOut();
-    }
-  });
-}
+      if (data.session?.user) {
+        const state = loadViewState();
+        if (state?.view === "org" && state.orgId) openOrg(state.orgId);
+        else renderLoggedIn(data.session.user);
+      } else {
+        renderLoggedOut();
+      }
 
       supabaseClient.auth.onAuthStateChange((_event, session) => {
-  if (session?.user) {
-    const state = loadViewState();
-    if (state?.view === "org" && state.orgId) openOrg(state.orgId);
-    else renderLoggedIn(session.user);
-  } else {
-    renderLoggedOut();
-  }
-});
+        if (session?.user) {
+          const state = loadViewState();
+          if (state?.view === "org" && state.orgId) openOrg(state.orgId);
+          else renderLoggedIn(session.user);
+        } else {
+          renderLoggedOut();
+        }
+      });
     }
 
     start();
