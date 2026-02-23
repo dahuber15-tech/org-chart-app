@@ -7,7 +7,7 @@
   <style>
     body { font-family: system-ui, Arial; max-width: 900px; margin: 40px auto; padding: 0 16px; }
     .box { border: 1px solid #ddd; border-radius: 10px; padding: 12px; }
-    button { padding: 8px 12px; }
+    button { padding: 8px 12px; cursor: pointer; }
     input { padding: 8px 10px; width: 100%; box-sizing: border-box; }
   </style>
 </head>
@@ -15,68 +15,83 @@
   <h1>Org Chart App</h1>
   <div id="app" class="box">Loading…</div>
 
- <!-- Supabase JS -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Supabase JS -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<script>
-  const SUPABASE_URL = "https://gsyjnjcjfrejcevauql.supabase.co";
-  const SUPABASE_ANON_KEY = "sb_publishable_VrYJn2ogF288D8mHJsTA-w_dNpKUuPl";
+  <script>
+    const SUPABASE_URL = "https://gsyjnjcjfrejcevauql.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_VrYJn2ogF288D8mHJsTA-w_dNpKUuPl";
 
-  const app = document.getElementById("app");
+    const app = document.getElementById("app");
 
-  if (!window.supabase) {
-    app.innerText = "❌ Supabase JS failed to load";
-    throw new Error("Supabase JS not loaded");
-  }
+    // Make failures visible instead of silently staying on "Loading…"
+    try {
+      if (!window.supabase) {
+        app.innerText = "❌ Supabase JS failed to load (window.supabase is missing).";
+        throw new Error("Supabase JS not loaded");
+      }
 
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      // IMPORTANT: use a unique name to avoid 'already declared' conflicts
+      const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  function renderLoggedOut() {
-    app.innerHTML = `
-      <h2>Sign in</h2>
-      <div style="max-width:420px; display:grid; gap:10px;">
-        <input id="email" type="email" placeholder="Email" />
-        <input id="password" type="password" placeholder="Password" />
-        <button id="loginBtn">Sign in</button>
-        <div id="msg" style="color:crimson;"></div>
-      </div>
-    `;
+      function renderLoggedOut() {
+        app.innerHTML = `
+          <h2>Sign in</h2>
+          <div style="max-width:420px; display:grid; gap:10px;">
+            <input id="email" type="email" placeholder="Email" autocomplete="username" />
+            <input id="password" type="password" placeholder="Password" autocomplete="current-password" />
+            <button id="loginBtn">Sign in</button>
+            <div id="msg" style="color:crimson;"></div>
+          </div>
+        `;
 
-    document.getElementById("loginBtn").onclick = async () => {
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value;
-      const msg = document.getElementById("msg");
-      msg.textContent = "";
+        document.getElementById("loginBtn").onclick = async () => {
+          const email = document.getElementById("email").value.trim();
+          const password = document.getElementById("password").value;
+          const msg = document.getElementById("msg");
+          msg.textContent = "";
 
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) msg.textContent = error.message;
-    };
-  }
+          const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+          if (error) msg.textContent = error.message;
+        };
+      }
 
-  function renderLoggedIn(user) {
-    app.innerHTML = `
-      <h2>✅ Logged in</h2>
-      <p>${user.email}</p>
-      <button id="logoutBtn">Sign out</button>
-    `;
+      function renderLoggedIn(user) {
+        app.innerHTML = `
+          <h2>✅ Logged in</h2>
+          <p>${user.email}</p>
+          <button id="logoutBtn">Sign out</button>
+        `;
 
-    document.getElementById("logoutBtn").onclick = async () => {
-      await supabase.auth.signOut();
-    };
-  }
+        document.getElementById("logoutBtn").onclick = async () => {
+          await supabaseClient.auth.signOut();
+        };
+      }
 
-  async function start() {
-    const { data } = await supabase.auth.getSession();
-    if (data.session) renderLoggedIn(data.session.user);
-    else renderLoggedOut();
+      async function start() {
+        const { data, error } = await supabaseClient.auth.getSession();
+        if (error) {
+          app.innerText = "❌ Supabase error: " + error.message;
+          return;
+        }
 
-    supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) renderLoggedIn(session.user);
-      else renderLoggedOut();
-    });
-  }
+        if (data.session) renderLoggedIn(data.session.user);
+        else renderLoggedOut();
 
-  start();
-</script>
+        supabaseClient.auth.onAuthStateChange((_event, session) => {
+          if (session?.user) renderLoggedIn(session.user);
+          else renderLoggedOut();
+        });
+      }
+
+      start();
+    } catch (e) {
+      // Last-resort display
+      console.error(e);
+      if (app && app.innerText === "Loading…") {
+        app.innerText = "❌ App crashed. Check DevTools Console for details.";
+      }
+    }
+  </script>
 </body>
 </html>
