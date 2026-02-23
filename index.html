@@ -19,30 +19,67 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
-  const app = document.getElementById("app");
-  app.innerText = "✅ Inline JS is running...";
-
-  // If the Supabase CDN script failed to load, we show it clearly
-  if (!window.supabase) {
-    app.innerText =
-      "❌ Supabase JS library did not load. Likely blocked by browser/extension or CDN failed.";
-    throw new Error("Supabase JS library did not load (window.supabase is undefined).");
-  }
-
   const SUPABASE_URL = "https://gsyjnjcjfrejcevauql.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_VrYJn2ogF288D8mHJsTA-w_dNpKUuPl";
 
-  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const app = document.getElementById("app");
 
-  (async () => {
-    app.innerText = "✅ Supabase library loaded. Testing auth session...";
-    const { data, error } = await supabaseClient.auth.getSession();
-    if (error) {
-      app.innerText = "❌ Supabase error: " + error.message;
-      return;
-    }
-    app.innerText = "✅ Connected. Logged in: " + (data.session ? "YES" : "NO");
-  })();
+  if (!window.supabase) {
+    app.innerText = "❌ Supabase JS failed to load";
+    throw new Error("Supabase JS not loaded");
+  }
+
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  function renderLoggedOut() {
+    app.innerHTML = `
+      <h2>Sign in</h2>
+      <div style="max-width:420px; display:grid; gap:10px;">
+        <input id="email" type="email" placeholder="Email" />
+        <input id="password" type="password" placeholder="Password" />
+        <button id="loginBtn">Sign in</button>
+        <div id="msg" style="color:crimson;"></div>
+      </div>
+    `;
+
+    document.getElementById("loginBtn").onclick = async () => {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      const msg = document.getElementById("msg");
+      msg.textContent = "";
+
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) msg.textContent = error.message;
+    };
+  }
+
+  function renderLoggedIn(user) {
+    app.innerHTML = `
+      <h2>✅ Logged in</h2>
+      <p>${user.email}</p>
+      <button id="logoutBtn">Sign out</button>
+      <p style="opacity:0.7; margin-top:12px;">
+        Next step: show organisations here.
+      </p>
+    `;
+
+    document.getElementById("logoutBtn").onclick = async () => {
+      await supabase.auth.signOut();
+    };
+  }
+
+  async function start() {
+    const { data } = await supabase.auth.getSession();
+    if (data.session) renderLoggedIn(data.session.user);
+    else renderLoggedOut();
+
+    supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) renderLoggedIn(session.user);
+      else renderLoggedOut();
+    });
+  }
+
+  start();
 </script>
 </body>
 </html>
