@@ -263,6 +263,11 @@
       .card { grid-column: span 12; }
       .createRow { flex-direction: column; }
     }
+    
+    .muted {
+  font-size: 13px;
+  color: var(--muted);
+}
   </style>
 </head>
 
@@ -500,13 +505,89 @@
   }
 
   function showAdd() {
-    document.getElementById("orgBody").innerHTML = `
-      <h3 style="margin:0 0 8px;">Add new contact</h3>
-      <p style="margin:0; color:var(--muted);">
-        Next step: we’ll add the form (name, position, department, manager) and save into <code>people</code>.
-      </p>
-    `;
-  }
+  document.getElementById("orgBody").innerHTML = `
+    <h3 style="margin:0 0 14px;">Add new contact</h3>
+
+    <div style="display:grid; gap:14px; max-width:520px;">
+
+      <div>
+        <label class="muted">Name</label>
+        <input class="input" id="personName" placeholder="John Smith" />
+      </div>
+
+      <div>
+        <label class="muted">Position</label>
+        <input class="input" id="personPosition" placeholder="Senior Process Engineer" />
+      </div>
+
+      <div>
+        <label class="muted">Reports to</label>
+        <select class="input" id="personManager" disabled>
+          <option value="">Select manager</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="muted">Hall / Area</label>
+        <select class="input" disabled>
+          <option value="">Select hall</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="muted">MSE / Group</label>
+        <select class="input" disabled>
+          <option value="">Select group</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="muted">Office / Location</label>
+        <select class="input" disabled>
+          <option value="">Select location</option>
+        </select>
+      </div>
+
+      <button class="btn primary" id="savePersonBtn" style="width:200px;">
+        Save contact
+      </button>
+
+      <div class="msg" id="personMsg"></div>
+    </div>
+  `;
+
+  document.getElementById("savePersonBtn").onclick = async () => {
+    const name = document.getElementById("personName").value.trim();
+    const position = document.getElementById("personPosition").value.trim();
+    const msg = document.getElementById("personMsg");
+
+    msg.textContent = "";
+
+    if (!name) {
+      msg.textContent = "Name is required.";
+      return;
+    }
+
+    const { error } = await supabaseClient
+      .from("people")
+      .insert({
+        organisation_id: orgId,
+        name,
+        position
+      });
+
+    if (error) {
+      msg.textContent = error.message;
+      return;
+    }
+
+    msg.style.color = "var(--good)";
+    msg.textContent = "Contact saved.";
+
+    document.getElementById("personName").value = "";
+    document.getElementById("personPosition").value = "";
+  };
+}
 
   function showAdmin() {
     document.getElementById("orgBody").innerHTML = `
