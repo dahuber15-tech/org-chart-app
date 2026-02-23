@@ -9,6 +9,7 @@
     .box { border: 1px solid #ddd; border-radius: 10px; padding: 12px; }
     button { padding: 8px 12px; cursor: pointer; }
     input { padding: 8px 10px; width: 100%; box-sizing: border-box; }
+    a { color: inherit; }
   </style>
 </head>
 <body>
@@ -19,8 +20,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script>
-    // IMPORTANT: ensure this is EXACTLY your Data API URL
-    const SUPABASE_URL = "https://gsypjnjcfjrejcevaqul.supabase.co"; 
+    const SUPABASE_URL = "https://gsypjnjcfjrejcevaqul.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_VrYJn2ogF288D8mHJsTA-w_dNpKUuPl";
 
     const app = document.getElementById("app");
@@ -87,19 +87,27 @@
         document.getElementById("logoutBtn").onclick = async () => {
           await supabaseClient.auth.signOut();
         };
-function openOrg(orgId) {
-  app.innerHTML = `
-    <button id="backBtn">← Back to org charts</button>
-    <h2>Org chart</h2>
-    <p><b>Org ID:</b> ${escapeHtml(orgId)}</p>
-    <p style="opacity:0.7;">People will be shown here next.</p>
-  `;
 
-  document.getElementById("backBtn").onclick = async () => {
-    const { data } = await supabaseClient.auth.getSession();
-    if (data.session?.user) renderLoggedIn(data.session.user);
-  };
-}
+        document.getElementById("createOrgBtn").onclick = async () => {
+          const orgMsg = document.getElementById("orgMsg");
+          orgMsg.textContent = "";
+
+          const name = document.getElementById("orgName").value.trim();
+          if (!name) return;
+
+          const { error } = await supabaseClient
+            .from("organisations")
+            .insert({ name, created_by: user.id });
+
+          if (error) {
+            orgMsg.textContent = error.message;
+            return;
+          }
+
+          document.getElementById("orgName").value = "";
+          await loadOrgs();
+        };
+
         async function loadOrgs() {
           const orgList = document.getElementById("orgList");
           const orgMsg = document.getElementById("orgMsg");
@@ -123,46 +131,45 @@ function openOrg(orgId) {
           }
 
           orgList.innerHTML = `
-  <ul style="padding-left:18px; margin:0; display:grid; gap:6px;">
-    ${data.map(o => `
-      <li>
-        <a href="#" data-org-id="${o.id}" style="font-weight:600;">
-          ${escapeHtml(o.name)}
-        </a>
-      </li>
-    `).join("")}
-  </ul>
-`;
+            <ul style="padding-left:18px; margin:0; display:grid; gap:6px;">
+              ${data.map(o => `
+                <li>
+                  <a href="#" data-org-id="${escapeHtml(o.id)}" style="font-weight:600;">
+                    ${escapeHtml(o.name)}
+                  </a>
+                </li>
+              `).join("")}
+            </ul>
+          `;
 
-orgList.querySelectorAll("a[data-org-id]").forEach(link => {
-  link.onclick = (e) => {
-    e.preventDefault();
-    const orgId = link.getAttribute("data-org-id");
-    openOrg(orgId);
-  };
-});
+          orgList.querySelectorAll("a[data-org-id]").forEach(link => {
+            link.onclick = (e) => {
+              e.preventDefault();
+              const orgId = link.getAttribute("data-org-id");
+              openOrg(orgId);
+            };
+          });
+        }
 
-        document.getElementById("createOrgBtn").onclick = async () => {
-          const orgMsg = document.getElementById("orgMsg");
-          orgMsg.textContent = "";
-
-          const name = document.getElementById("orgName").value.trim();
-          if (!name) return;
-
-          const { error } = await supabaseClient
-            .from("organisations")
-            .insert({ name, created_by: user.id });
-
-          if (error) {
-            orgMsg.textContent = error.message;
-            return;
-          }
-
-          document.getElementById("orgName").value = "";
-          await loadOrgs();
-        };
+        // expose loadOrgs to the create button handler
+        window.loadOrgs = loadOrgs;
 
         loadOrgs();
+      }
+
+      // ✅ openOrg is TOP-LEVEL (not inside loadOrgs / renderLoggedIn)
+      function openOrg(orgId) {
+        app.innerHTML = `
+          <button id="backBtn">← Back to org charts</button>
+          <h2>Org chart</h2>
+          <p><b>Org ID:</b> ${escapeHtml(orgId)}</p>
+          <p style="opacity:0.7;">People will be shown here next.</p>
+        `;
+
+        document.getElementById("backBtn").onclick = async () => {
+          const { data } = await supabaseClient.auth.getSession();
+          if (data.session?.user) renderLoggedIn(data.session.user);
+        };
       }
 
       async function start() {
