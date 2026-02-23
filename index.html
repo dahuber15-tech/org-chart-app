@@ -4,17 +4,270 @@
   <meta charset="UTF-8" />
   <title>Org Chart App</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
   <style>
-    body { font-family: system-ui, Arial; max-width: 900px; margin: 40px auto; padding: 0 16px; }
-    .box { border: 1px solid #ddd; border-radius: 10px; padding: 12px; }
-    button { padding: 8px 12px; cursor: pointer; }
-    input { padding: 8px 10px; width: 100%; box-sizing: border-box; }
-    a { color: inherit; }
+    :root{
+      --bg: #0f1115;
+      --panel: #141821;
+      --panel2: #10131a;
+      --text: #e8eaf0;
+      --muted: #a7adbb;
+      --muted2: #7f8798;
+      --border: rgba(255,255,255,0.10);
+      --border2: rgba(255,255,255,0.14);
+      --shadow: 0 18px 40px rgba(0,0,0,0.45);
+      --shadow2: 0 12px 28px rgba(0,0,0,0.40);
+      --accent: #cfd6e6;
+      --danger: #ff6b6b;
+      --good: #7ae582;
+      --btn: #1b2130;
+      --btnHover: #232b3f;
+      --focus: rgba(207,214,230,0.24);
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background: radial-gradient(1200px 800px at 20% 10%, rgba(255,255,255,0.06), transparent 50%),
+                  radial-gradient(1200px 800px at 80% 90%, rgba(255,255,255,0.05), transparent 55%),
+                  var(--bg);
+      color: var(--text);
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 22px 18px 60px;
+    }
+
+    .topbar {
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      border: 1px solid var(--border);
+      background: rgba(20,24,33,0.78);
+      backdrop-filter: blur(8px);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow2);
+    }
+
+    .brand {
+      display:flex; align-items:center; gap:10px;
+      font-weight: 750;
+      letter-spacing: 0.2px;
+    }
+    .logo {
+      width: 28px; height: 28px; border-radius: 10px;
+      background: linear-gradient(145deg, rgba(255,255,255,0.18), rgba(255,255,255,0.06));
+      border: 1px solid var(--border);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.10);
+    }
+
+    .pill {
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(16,19,26,0.7);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .btn {
+      appearance: none;
+      border: 1px solid var(--border2);
+      background: var(--btn);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+      transition: transform .05s ease, background .15s ease, border-color .15s ease;
+      font-weight: 650;
+    }
+    .btn:hover { background: var(--btnHover); border-color: rgba(255,255,255,0.20); }
+    .btn:active { transform: translateY(1px); }
+    .btn.primary {
+      background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04));
+    }
+    .btn.big {
+      padding: 14px 18px;
+      border-radius: 14px;
+      font-size: 14px;
+      min-width: 220px;
+    }
+
+    .input {
+      width: 100%;
+      border: 1px solid var(--border);
+      background: rgba(16,19,26,0.8);
+      color: var(--text);
+      padding: 12px 12px;
+      border-radius: 12px;
+      outline: none;
+    }
+    .input:focus {
+      border-color: rgba(255,255,255,0.22);
+      box-shadow: 0 0 0 4px var(--focus);
+    }
+
+    .panel {
+      border: 1px solid var(--border);
+      background: rgba(20,24,33,0.72);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .hero {
+      text-align: center;
+      padding: 34px 18px 22px;
+    }
+    .hero h1 {
+      margin: 0;
+      font-size: 30px;
+      letter-spacing: 0.3px;
+    }
+    .hero p {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .centerWrap {
+      min-height: calc(100vh - 44px);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding: 24px 18px;
+    }
+
+    .loginCard {
+      width: 100%;
+      max-width: 540px;
+      padding: 18px;
+    }
+
+    .loginForm {
+      padding: 18px;
+      display:grid;
+      gap: 12px;
+    }
+
+    .msg {
+      color: var(--danger);
+      font-size: 13px;
+      min-height: 18px;
+    }
+
+    .sectionTitle {
+      text-align:center;
+      margin: 26px 0 14px;
+    }
+    .sectionTitle h2 {
+      margin: 0;
+      font-size: 22px;
+      letter-spacing: 0.2px;
+    }
+    .sectionTitle p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .createRow {
+      display:flex;
+      gap: 10px;
+      max-width: 720px;
+      margin: 0 auto 12px;
+      padding: 0 6px;
+    }
+
+    .grid {
+      display:grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .card {
+      grid-column: span 6;
+      border: 1px solid var(--border);
+      background: rgba(16,19,26,0.75);
+      border-radius: var(--radius);
+      padding: 16px 16px 14px;
+      box-shadow: var(--shadow2);
+      cursor: pointer;
+      transition: transform .08s ease, border-color .15s ease, background .15s ease;
+    }
+    .card:hover { transform: translateY(-1px); border-color: rgba(255,255,255,0.18); background: rgba(16,19,26,0.88); }
+    .card h3 { margin: 0; font-size: 16px; letter-spacing: 0.2px; }
+    .meta {
+      margin-top: 10px;
+      display:flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .meta span {
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(20,24,33,0.55);
+    }
+
+    .empty {
+      text-align:center;
+      color: var(--muted);
+      padding: 18px 10px;
+    }
+
+    .orgShell {
+      padding: 16px;
+    }
+
+    .orgHeader {
+      display:flex;
+      align-items:flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .orgHeader h2 { margin: 0; font-size: 20px; }
+    .orgHeader p { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
+
+    .centerActions {
+      display:flex;
+      justify-content:center;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 18px 10px 12px;
+    }
+
+    .subPanel {
+      border: 1px solid var(--border);
+      background: rgba(16,19,26,0.65);
+      border-radius: var(--radius);
+      padding: 14px;
+      margin-top: 10px;
+    }
+
+    @media (max-width: 900px) {
+      .card { grid-column: span 12; }
+      .createRow { flex-direction: column; }
+    }
   </style>
 </head>
+
 <body>
-  <h1>Org Chart App</h1>
-  <div id="app" class="box">Loading…</div>
+  <div id="app"></div>
 
   <!-- Supabase JS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -23,7 +276,7 @@
     const SUPABASE_URL = "https://gsypjnjcfjrejcevaqul.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_VrYJn2ogF288D8mHJsTA-w_dNpKUuPl";
 
-    const app = document.getElementById("app");
+    const root = document.getElementById("app");
 
     function escapeHtml(str) {
       return String(str).replace(/[&<>"']/g, (c) => ({
@@ -35,193 +288,247 @@
       }[c]));
     }
 
-    try {
-      if (!window.supabase) {
-        app.innerText = "❌ Supabase JS failed to load (window.supabase is missing).";
-        throw new Error("Supabase JS not loaded");
-      }
+    if (!window.supabase) {
+      root.innerHTML = `<div class="container"><div class="panel" style="padding:16px;">❌ Supabase library failed to load.</div></div>`;
+      throw new Error("Supabase JS not loaded");
+    }
 
-      const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-      function renderLoggedOut() {
-        app.innerHTML = `
-          <h2>Sign in</h2>
-          <div style="max-width:420px; display:grid; gap:10px;">
-            <input id="email" type="email" placeholder="Email" autocomplete="username" />
-            <input id="password" type="password" placeholder="Password" autocomplete="current-password" />
-            <button id="loginBtn">Sign in</button>
-            <div id="msg" style="color:crimson;"></div>
+    // ---------------------------
+    // LOGIN VIEW
+    // ---------------------------
+    function renderLoggedOut() {
+      root.innerHTML = `
+        <div class="centerWrap">
+          <div class="panel loginCard">
+            <div class="hero">
+              <div style="display:flex; justify-content:center; margin-bottom:12px;">
+                <div class="logo" aria-hidden="true"></div>
+              </div>
+              <h1>Welcome to Your Org-Chart Creator</h1>
+              <p>Please log in to view and manage your company’s org charts.</p>
+            </div>
+
+            <div class="loginForm">
+              <input class="input" id="email" type="email" placeholder="Email" autocomplete="username" />
+              <input class="input" id="password" type="password" placeholder="Password" autocomplete="current-password" />
+              <button class="btn primary" id="loginBtn">Log in</button>
+              <div class="msg" id="msg"></div>
+            </div>
           </div>
-        `;
+        </div>
+      `;
 
-        document.getElementById("loginBtn").onclick = async () => {
-          const email = document.getElementById("email").value.trim();
-          const password = document.getElementById("password").value;
-          const msg = document.getElementById("msg");
-          msg.textContent = "";
+      document.getElementById("loginBtn").onclick = async () => {
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value;
+        const msg = document.getElementById("msg");
+        msg.textContent = "";
 
-          const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-          if (error) msg.textContent = error.message;
-        };
-      }
+        const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (error) msg.textContent = error.message;
+      };
+    }
 
-      function renderLoggedIn(user) {
-        app.innerHTML = `
-          <h2>✅ Logged in</h2>
-          <p>${escapeHtml(user.email || "")}</p>
-          <button id="logoutBtn">Sign out</button>
-
-          <hr style="margin: 16px 0;" />
-
-          <h3>My org charts</h3>
-
-          <div style="display:flex; gap:10px; max-width:520px; margin-bottom:12px;">
-            <input id="orgName" placeholder="New org chart name (e.g. Robert Bosch Hatvan Plant)" />
-            <button id="createOrgBtn">Create</button>
+    // ---------------------------
+    // DASHBOARD: ORG LIST
+    // ---------------------------
+    function renderLoggedIn(user) {
+      root.innerHTML = `
+        <div class="container">
+          <div class="topbar">
+            <div class="brand">
+              <div class="logo" aria-hidden="true"></div>
+              <div>Org Chart App</div>
+            </div>
+            <div class="pill">Logged in as: <b style="color:var(--text); font-weight:650;">${escapeHtml(user.email || "")}</b></div>
+            <button class="btn" id="logoutBtn">Sign out</button>
           </div>
 
-          <div id="orgMsg" style="color:crimson; margin-bottom:10px;"></div>
-          <div id="orgList">Loading…</div>
-        `;
+          <div class="sectionTitle">
+            <h2>Your current charts</h2>
+            <p>Click a chart to open it. Create a new one any time.</p>
+          </div>
 
-        document.getElementById("logoutBtn").onclick = async () => {
-          await supabaseClient.auth.signOut();
-        };
+          <div class="createRow">
+            <input class="input" id="orgName" placeholder="New org chart name (e.g. Robert Bosch Hatvan Plant)" />
+            <button class="btn primary" id="createOrgBtn">Create chart</button>
+          </div>
 
-        document.getElementById("createOrgBtn").onclick = async () => {
-          const orgMsg = document.getElementById("orgMsg");
-          orgMsg.textContent = "";
+          <div class="msg" id="orgMsg" style="text-align:center;"></div>
 
-          const name = document.getElementById("orgName").value.trim();
-          if (!name) return;
+          <div class="grid" id="orgCards"></div>
+        </div>
+      `;
 
-          const { error } = await supabaseClient
-            .from("organisations")
-            .insert({ name, created_by: user.id });
+      document.getElementById("logoutBtn").onclick = async () => {
+        await supabaseClient.auth.signOut();
+      };
 
-          if (error) {
-            orgMsg.textContent = error.message;
-            return;
-          }
+      document.getElementById("createOrgBtn").onclick = async () => {
+        const orgMsg = document.getElementById("orgMsg");
+        orgMsg.textContent = "";
 
-          document.getElementById("orgName").value = "";
-          await loadOrgs();
-        };
+        const name = document.getElementById("orgName").value.trim();
+        if (!name) return;
 
-        async function loadOrgs() {
-          const orgList = document.getElementById("orgList");
-          const orgMsg = document.getElementById("orgMsg");
-          orgMsg.textContent = "";
-          orgList.textContent = "Loading…";
+        const { error } = await supabaseClient
+          .from("organisations")
+          .insert({ name, created_by: user.id });
 
-          const { data, error } = await supabaseClient
-            .from("organisations")
-            .select("id, name, created_at")
-            .order("created_at", { ascending: false });
-
-          if (error) {
-            orgList.textContent = "";
-            orgMsg.textContent = error.message;
-            return;
-          }
-
-          if (!data || data.length === 0) {
-            orgList.innerHTML = `<div style="opacity:0.7;">No org charts yet.</div>`;
-            return;
-          }
-
-          orgList.innerHTML = `
-            <ul style="padding-left:18px; margin:0; display:grid; gap:6px;">
-              ${data.map(o => `
-                <li>
-                  <a href="#" data-org-id="${escapeHtml(o.id)}" style="font-weight:600;">
-                    ${escapeHtml(o.name)}
-                  </a>
-                </li>
-              `).join("")}
-            </ul>
-          `;
-
-          orgList.querySelectorAll("a[data-org-id]").forEach(link => {
-            link.onclick = (e) => {
-              e.preventDefault();
-              const orgId = link.getAttribute("data-org-id");
-              openOrg(orgId);
-            };
-          });
-        }
-
-        // expose loadOrgs to the create button handler
-        window.loadOrgs = loadOrgs;
-
-        loadOrgs();
-      }
-
-      // ✅ openOrg is TOP-LEVEL (not inside loadOrgs / renderLoggedIn)
-     function openOrg(orgId) {
-  app.innerHTML = `
-    <button id="backBtn">← Back to org charts</button>
-
-    <h2 style="margin-top:12px;">Org</h2>
-    <p><b>Org ID:</b> ${escapeHtml(orgId)}</p>
-
-    <div style="display:flex; gap:10px; margin: 14px 0;">
-      <button id="tabChartBtn">View chart</button>
-      <button id="tabAddBtn">Add person</button>
-    </div>
-
-    <div id="orgView" class="box">Loading…</div>
-  `;
-
-  document.getElementById("backBtn").onclick = async () => {
-    const { data } = await supabaseClient.auth.getSession();
-    if (data.session?.user) renderLoggedIn(data.session.user);
-  };
-
-  function showChartTab() {
-    document.getElementById("orgView").innerHTML = `
-      <h3>Chart</h3>
-      <p style="opacity:0.7;">We’ll render the tree here next.</p>
-    `;
-  }
-
-  function showAddTab() {
-    document.getElementById("orgView").innerHTML = `
-      <h3>Add person</h3>
-      <p style="opacity:0.7;">Next step: form fields + saving to Supabase.</p>
-    `;
-  }
-
-  document.getElementById("tabChartBtn").onclick = showChartTab;
-  document.getElementById("tabAddBtn").onclick = showAddTab;
-
-  // Default tab
-  showChartTab();
-}
-
-      async function start() {
-        const { data, error } = await supabaseClient.auth.getSession();
         if (error) {
-          app.innerText = "❌ Supabase error: " + error.message;
+          orgMsg.textContent = error.message;
           return;
         }
 
-        if (data.session?.user) renderLoggedIn(data.session.user);
-        else renderLoggedOut();
+        document.getElementById("orgName").value = "";
+        await loadOrgsAndRenderCards();
+      };
 
-        supabaseClient.auth.onAuthStateChange((_event, session) => {
-          if (session?.user) renderLoggedIn(session.user);
-          else renderLoggedOut();
+      async function getPeopleCount(orgId) {
+        // Uses count without returning rows
+        const { count, error } = await supabaseClient
+          .from("people")
+          .select("id", { count: "exact", head: true })
+          .eq("organisation_id", orgId);
+
+        if (error) return null;
+        return count ?? 0;
+      }
+
+      async function loadOrgsAndRenderCards() {
+        const orgCards = document.getElementById("orgCards");
+        const orgMsg = document.getElementById("orgMsg");
+        orgMsg.textContent = "";
+
+        orgCards.innerHTML = `<div class="empty" style="grid-column:1/-1;">Loading…</div>`;
+
+        const { data: orgs, error } = await supabaseClient
+          .from("organisations")
+          .select("id, name, created_at")
+          .order("created_at", { ascending: false });
+
+        if (error) {
+          orgCards.innerHTML = "";
+          orgMsg.textContent = error.message;
+          return;
+        }
+
+        if (!orgs || orgs.length === 0) {
+          orgCards.innerHTML = `<div class="empty" style="grid-column:1/-1;">No org charts yet.</div>`;
+          return;
+        }
+
+        // Fetch people counts (simple + practical; fine for MVP)
+        const counts = await Promise.all(orgs.map(async (o) => {
+          const peopleCount = await getPeopleCount(o.id);
+          return { orgId: o.id, peopleCount: peopleCount ?? 0 };
+        }));
+        const countMap = new Map(counts.map(x => [x.orgId, x.peopleCount]));
+
+        orgCards.innerHTML = orgs.map(o => {
+          const peopleCount = countMap.get(o.id) ?? 0;
+          const contributorsCount = 1; // future use
+          return `
+            <div class="card" data-org-id="${escapeHtml(o.id)}" role="button" tabindex="0" aria-label="Open ${escapeHtml(o.name)}">
+              <h3>${escapeHtml(o.name)}</h3>
+              <div class="meta">
+                <span>People: <b style="color:var(--text);">${peopleCount}</b></span>
+                <span>Contributors: <b style="color:var(--text);">${contributorsCount}</b></span>
+              </div>
+            </div>
+          `;
+        }).join("");
+
+        orgCards.querySelectorAll(".card[data-org-id]").forEach(card => {
+          const open = () => openOrg(card.getAttribute("data-org-id"));
+          card.onclick = open;
+          card.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") open(); };
         });
       }
 
-      start();
-    } catch (e) {
-      console.error(e);
-      if (app && app.innerText === "Loading…") {
-        app.innerText = "❌ App crashed. Check DevTools Console for details.";
-      }
+      loadOrgsAndRenderCards();
     }
+
+    // ---------------------------
+    // ORG VIEW (two big buttons)
+    // ---------------------------
+    function openOrg(orgId) {
+      root.innerHTML = `
+        <div class="container">
+          <div class="topbar">
+            <div class="brand">
+              <div class="logo" aria-hidden="true"></div>
+              <div>Org Chart App</div>
+            </div>
+            <button class="btn" id="backBtn">← Back</button>
+          </div>
+
+          <div class="panel orgShell" style="margin-top:14px;">
+            <div class="orgHeader">
+              <div>
+                <h2>Org chart</h2>
+                <p>Selected chart ID: <span style="color:var(--accent);">${escapeHtml(orgId)}</span></p>
+              </div>
+            </div>
+
+            <div class="centerActions">
+              <button class="btn big primary" id="btnAdd">Add new contacts</button>
+              <button class="btn big" id="btnChart">View full chart</button>
+            </div>
+
+            <div id="orgBody" class="subPanel">Choose an option above.</div>
+          </div>
+        </div>
+      `;
+
+      document.getElementById("backBtn").onclick = async () => {
+        const { data } = await supabaseClient.auth.getSession();
+        if (data.session?.user) renderLoggedIn(data.session.user);
+        else renderLoggedOut();
+      };
+
+      function showChart() {
+        document.getElementById("orgBody").innerHTML = `
+          <h3 style="margin:0 0 8px;">Full chart</h3>
+          <p style="margin:0; color:var(--muted);">
+            Next step: render the tree here (manager → direct reports).
+          </p>
+        `;
+      }
+
+      function showAdd() {
+        document.getElementById("orgBody").innerHTML = `
+          <h3 style="margin:0 0 8px;">Add new contact</h3>
+          <p style="margin:0; color:var(--muted);">
+            Next step: we’ll add the form (name, position, department, manager) and save into <code>people</code>.
+          </p>
+        `;
+      }
+
+      document.getElementById("btnChart").onclick = showChart;
+      document.getElementById("btnAdd").onclick = showAdd;
+
+      // Default
+      showChart();
+    }
+
+    // ---------------------------
+    // APP START
+    // ---------------------------
+    async function start() {
+      const { data } = await supabaseClient.auth.getSession();
+      if (data.session?.user) renderLoggedIn(data.session.user);
+      else renderLoggedOut();
+
+      supabaseClient.auth.onAuthStateChange((_event, session) => {
+        if (session?.user) renderLoggedIn(session.user);
+        else renderLoggedOut();
+      });
+    }
+
+    start();
   </script>
 </body>
 </html>
