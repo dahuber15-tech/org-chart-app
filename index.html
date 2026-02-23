@@ -87,7 +87,19 @@
         document.getElementById("logoutBtn").onclick = async () => {
           await supabaseClient.auth.signOut();
         };
+function openOrg(orgId) {
+  app.innerHTML = `
+    <button id="backBtn">← Back to org charts</button>
+    <h2>Org chart</h2>
+    <p><b>Org ID:</b> ${escapeHtml(orgId)}</p>
+    <p style="opacity:0.7;">People will be shown here next.</p>
+  `;
 
+  document.getElementById("backBtn").onclick = async () => {
+    const { data } = await supabaseClient.auth.getSession();
+    if (data.session?.user) renderLoggedIn(data.session.user);
+  };
+}
         async function loadOrgs() {
           const orgList = document.getElementById("orgList");
           const orgMsg = document.getElementById("orgMsg");
@@ -111,16 +123,24 @@
           }
 
           orgList.innerHTML = `
-            <ul style="padding-left:18px; margin:0; display:grid; gap:6px;">
-              ${data.map(o => `
-                <li>
-                  <b>${escapeHtml(o.name)}</b>
-                  <div style="opacity:0.6; font-size:12px;">${escapeHtml(o.id)}</div>
-                </li>
-              `).join("")}
-            </ul>
-          `;
-        }
+  <ul style="padding-left:18px; margin:0; display:grid; gap:6px;">
+    ${data.map(o => `
+      <li>
+        <a href="#" data-org-id="${o.id}" style="font-weight:600;">
+          ${escapeHtml(o.name)}
+        </a>
+      </li>
+    `).join("")}
+  </ul>
+`;
+
+orgList.querySelectorAll("a[data-org-id]").forEach(link => {
+  link.onclick = (e) => {
+    e.preventDefault();
+    const orgId = link.getAttribute("data-org-id");
+    openOrg(orgId);
+  };
+});
 
         document.getElementById("createOrgBtn").onclick = async () => {
           const orgMsg = document.getElementById("orgMsg");
