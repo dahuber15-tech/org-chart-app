@@ -34,64 +34,95 @@
       // IMPORTANT: use a unique name to avoid 'already declared' conflicts
       const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-      function renderLoggedOut() {
-        app.innerHTML = `
-          <h2>Sign in</h2>
-          <div style="max-width:420px; display:grid; gap:10px;">
-            <input id="email" type="email" placeholder="Email" autocomplete="username" />
-            <input id="password" type="password" placeholder="Password" autocomplete="current-password" />
-            <button id="loginBtn">Sign in</button>
-            <div id="msg" style="color:crimson;"></div>
-          </div>
-        `;
-
-        document.getElementById("loginBtn").onclick = async () => {
-          const email = document.getElementById("email").value.trim();
-          const password = document.getElementById("password").value;
-          const msg = document.getElementById("msg");
-          msg.textContent = "";
-
-          const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-          if (error) msg.textContent = error.message;
-        };
-      }
-
       function renderLoggedIn(user) {
-        app.innerHTML = `
-          <h2>✅ Logged in</h2>
-          <p>${user.email}</p>
-          <button id="logoutBtn">Sign out</button>
-        `;
+  app.innerHTML = `
+    <h2>✅ Logged in</h2>
+    <p>${user.email}</p>
+    <button id="logoutBtn">Sign out</button>
 
-        document.getElementById("logoutBtn").onclick = async () => {
-          await supabaseClient.auth.signOut();
-        };
-      }
+    <hr style="margin: 16px 0;" />
 
-      async function start() {
-        const { data, error } = await supabaseClient.auth.getSession();
-        if (error) {
-          app.innerText = "❌ Supabase error: " + error.message;
-          return;
-        }
+    <h3>My org charts</h3>
 
-        if (data.session) renderLoggedIn(data.session.user);
-        else renderLoggedOut();
+    <div style="display:flex; gap:10px; max-width:520px; margin-bottom:12px;">
+      <input id="orgName" placeholder="New org chart name (e.g. Robert Bosch Hatvan Plant)" />
+      <button id="createOrgBtn">Create</button>
+    </div>
 
-        supabaseClient.auth.onAuthStateChange((_event, session) => {
-          if (session?.user) renderLoggedIn(session.user);
-          else renderLoggedOut();
-        });
-      }
+    <div id="orgMsg" style="color:crimson; margin-bottom:10px;"></div>
+    <div id="orgList">Loading…</div>
+  `;
 
-      start();
-    } catch (e) {
-      // Last-resort display
-      console.error(e);
-      if (app && app.innerText === "Loading…") {
-        app.innerText = "❌ App crashed. Check DevTools Console for details.";
-      }
+  document.getElementById("logoutBtn").onclick = async () => {
+    await supabaseClient.auth.signOut();
+  };
+
+  async function loadOrgs() {
+    const orgList = document.getElementById("orgList");
+    const orgMsg = document.getElementById("orgMsg");
+    orgMsg.textContent = "";
+    orgList.textContent = "Loading…";
+
+    const { data, error } = await supabaseClient
+      .from("organisations")
+      .select("id, name, created_at")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      orgList.textContent = "";
+      orgMsg.textContent = error.message;
+      return;
     }
+
+    if (!data || data.length === 0) {
+      orgList.innerHTML = `<div style="opacity:0.7;">No org charts yet.</div>`;
+      return;
+    }
+
+    orgList.innerHTML = `
+      <ul style="padding-left:18px; margin:0; display:grid; gap:6px;">
+        ${data.map(o => `
+          <li>
+            <b>${escapeHtml(o.name)}</b>
+            <div style="opacity:0.6; font-size:12px;">${o.id}</div>
+          </li>
+        `).join("")}
+      </ul>
+    `;
+  }
+
+  document.getElementById("createOrgBtn").onclick = async () => {
+    const orgMsg = document.getElementById("orgMsg");
+    orgMsg.textContent = "";
+
+    const name = document.getElementById("orgName").value.trim();
+    if (!name) return;
+
+    const { error } = await supabaseClient
+      .from("organisations")
+      .insert({ name, created_by: user.id });
+
+    if (error) {
+      orgMsg.textContent = error.message;
+      return;
+    }
+
+    document.getElementById("orgName").value = "";
+    await loadOrgs();
+  };
+
+  function escapeHtml(str) {
+    return str.replace(/[&<>"']/g, (c) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;"
+    }[c]));
+  }
+
+  loadOrgs();
+}
   </script>
 </body>
 </html>
